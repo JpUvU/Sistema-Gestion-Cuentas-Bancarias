@@ -1,6 +1,6 @@
 import os 
 base_de_datos = {}
-
+mov_depoist = 0
 def menu_principal():
     print('--------------------------------------')
     print('''      GESTION DE CUENTAS BANCARIAS       
@@ -11,8 +11,9 @@ def menu_principal():
             5: Pago Cuota Credito
             6: Cancelar Cuenta''')
     print('--------------------------------------')
-    
 
+
+    
 def crear_cuenta():
 
     crear_cuenta = input('Si desea crear la cuenta ingrese "S" para si o "N" para no: ').strip().upper()
@@ -27,10 +28,13 @@ def crear_cuenta():
             ubicacion = input('Ingrese la ciudad de residencia: ').strip()
             saldo = int(input('Ingrese el saldo inicial: '))
             tipoCuenta = input('Ingrese si la cuenta sera ahorros o corriente: ').strip()
-            Saldocredito = 0
+            saldo_cdt = 0
+            SaldocreditoLibreInv = 0
+
 
             if tipoCuenta == 'ahorros' or tipoCuenta ==  'corriente':
-                datos_usuario = {nombre: {'cedula': cc, 'email': email, 'contacto': contacto, 'ciudad': ubicacion, 'saldo': saldo, 'Tipo': tipoCuenta, 'Credito': Saldocredito }}
+                datos_usuario = {nombre: {'cedula': cc, 'email': email, 'contacto': contacto, 'ciudad': ubicacion, 'saldo': saldo, 
+                                          'productos':{'Tipo': tipoCuenta, 'CDT': saldo_cdt ,'credito libre inversion': SaldocreditoLibreInv}}}
 
                 llave = len(base_de_datos) + 1
                 base_de_datos.update({llave: datos_usuario})
@@ -46,7 +50,7 @@ def crear_cuenta():
 
 def depositar_saldo():
     user = input('Ingrese nombre del usuario al cual le vas a depositar: ')
-
+    global mov_depoist
     # Recorremos el diccionario principal
     for llave, item in base_de_datos.items():
 
@@ -62,6 +66,7 @@ def depositar_saldo():
                 monto_a_depositar = int(input(f'Ingrese el saldo a agregar a el sr/sra {user}: '))
                 datos_usuario['saldo'] += monto_a_depositar
                 print(f'Depósito exitoso. Nuevo saldo para {user}: {datos_usuario["saldo"]}')
+                mov_depoist += 1
             except ValueError:
                 print("Error: Ingrese un valor numérico válido.")
             return # Salimos de la función una vez que encontramos al usuario
@@ -70,10 +75,92 @@ def depositar_saldo():
     print('No se ha encontrado el usuario.')
 
 
-def solicitar_credito():
-    pass
+
+def menu_credito():
+    print('--------------------------------------')
+    print('''      Consulta del portafolio       
+            1: CDT 
+            2: Credito libre inversion
+            3: Credito de vivienda
+            4: Credito para comprar automovil''')
+    print('--------------------------------------')
 
 
+
+def portafolio():
+    menu_credito()
+    optionPortafolio = int(input('Ingresa la opcion deseada para proceder: '))
+
+    if optionPortafolio == 1:
+         saldo_cdt()
+    elif optionPortafolio == 2:
+        credit_libre_inversion()
+        
+        
+def saldo_cdt():
+    try:
+        cedula = int(input('Ingrese la cédula del usuario al que se le abrirá el CDT: '))
+        # Recorremos el diccionario principal
+        for llave, item in base_de_datos.items():
+
+            # Guardamos la clave principal, es decir el nombre
+            nombre_usuario = list(item.keys())[0]
+            # Guardamos los valores de la clave principal
+            datos_usuario = item[nombre_usuario]
+            
+            # Para saber si la cedula que nosotros buscamos coincide con los valores guardados en datos_usuario...
+            if datos_usuario['cedula'] == cedula:
+                print(f'Usuario encontrado: {nombre_usuario}')
+                print(f'Saldo actual: {datos_usuario["saldo"]}')
+
+                monto = int(input('Ingrese el monto que desea invertir en el CDT: '))
+                if monto > datos_usuario['saldo']:
+                    print('Fondos insuficientes para abrir el CDT.')
+                    return
+                else:
+                    datos_usuario['saldo'] -= monto
+                    datos_usuario['productos']['CDT'] += monto
+                    print(f'CDT creado exitosamente por ${monto}')
+                    print(f'Nuevo saldo: {datos_usuario["saldo"]}')
+                    print(f'CDT actual: {datos_usuario["productos"]["CDT"]}')
+                    return
+        print('Usuario no encontrado con esa cédula.')
+    except ValueError:
+        print('Error: debe ingresar un número de cédula y un monto válidos.')
+
+
+def credit_libre_inversion():
+    try:
+        cedula = int(input('Ingrese la cédula del usuario al que se le abrirá crédito de libre inversión: '))
+
+        for llave, item in base_de_datos.items():
+            nombre_usuario = list(item.keys())[0]
+            datos_usuario = item[nombre_usuario]
+
+            if cedula == datos_usuario['cedula']:
+                print(f'Usuario encontrado: {nombre_usuario}')
+                print(f'Saldo actual: {datos_usuario["saldo"]}')
+
+                montoAprestar = int(input('Ingresa el monto que vas a solicitar de libre inversión: '))
+
+                # Suponiendo que permites solo un crédito activo por persona
+                if datos_usuario['productos']['Credito'] > 0:
+                    print('Lo sentimos, ya tienes un crédito activo.')
+                else:
+                    datos_usuario['productos']['Credito'] += montoAprestar
+                    datos_usuario['saldo'] += montoAprestar  # Se suma al saldo
+                    print(f'Sr/Sra {nombre_usuario}, su crédito fue aprobado por ${montoAprestar}')
+                    print(f'Nuevo saldo: {datos_usuario["saldo"]}')
+                    print(f'Crédito actual: {datos_usuario["productos"]["Credito"]}')
+                return
+
+        print('Usuario no encontrado con esa cédula.')
+
+    except ValueError:
+        print('Error: debe ingresar números válidos para cédula y monto.')
+
+
+            
 while True:
     menu_principal()
     opcion = int(input('Ingrese la opcion a ejecutar: '))
@@ -83,4 +170,6 @@ while True:
             crear_cuenta()
         case 2:
             depositar_saldo()
+        case 3:
+            portafolio()
 
