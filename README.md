@@ -1,8 +1,14 @@
-#Autor: Juan Pablo Barrera Diaz, Grupo J1
+#Autor: 
+👦🏻 Juan Pablo Barrera Diaz, Grupo J1
 
-#Descripcion: Sistema de gestion de cuentas bancarias con diccionarios
+#Descripcion: 
+💵 Sistema de gestion de cuentas bancarias con diccionarios
 
 #Stack tecnologico:
+🐍 Python:
+    ➰ Bucles
+    📚 Diccionarios
+    🤼 Condicionales
 
 #Requerimientos:
 Ejecucuin: Linux, windows
