@@ -1,4 +1,6 @@
-import os 
+from datetime import datetime
+import os
+import uuid 
 base_de_datos = {}
 
 def menu_principal():
@@ -10,9 +12,11 @@ def menu_principal():
             4: Retirar Dinero
             5: Pago Cuota Credito
             6: Cancelar Cuenta
-            7: Salir del sistema''')
+            7: Historial de productos
+            8: Historial de movimientos
+            9: Salir del sistema''')
     print('--------------------------------------')
-import uuid
+
 
 def generar_id():
     return str(uuid.uuid4())[:8]  # ID único corto
@@ -38,7 +42,7 @@ def crear_cuenta():
             deudaCredito = 0
 
             if tipoCuenta == 'ahorros' or tipoCuenta ==  'corriente':
-                datos_usuario = {nombre: {'cedula': cc, 'email': email, 'contacto': contacto, 'ciudad': ubicacion, 'saldo': saldo,'deuda': deudaCredito, 
+                datos_usuario = {nombre: {'cedula': cc, 'email': email, 'contacto': contacto, 'ciudad': ubicacion, 'saldo': saldo,'deuda': deudaCredito, 'movimientos': {}, 
                                           'productos':{ generar_id():{'Tipo': tipoCuenta}, generar_id():{'CDT': saldo_cdt} , generar_id():{'credito libre inversion': SaldoCreditoLibreInv},
                                             generar_id():{'credito vivienda: ': SaldoCreditoVivienda}, generar_id():{'credito automovil': saldoCreditoAutomovil}}}}
 
@@ -70,6 +74,7 @@ def depositar_saldo():
             try:
                 monto_a_depositar = int(input(f'Ingrese el saldo a agregar a el sr/sra {user}: '))
                 datos_usuario['saldo'] += monto_a_depositar
+                registrar_movimiento(datos_usuario, "Depósito", monto_a_depositar)
                 print(f'Depósito exitoso. Nuevo saldo para {user}: {datos_usuario["saldo"]}')
             except ValueError:
                 print("Error: Ingrese un valor numérico válido.")
@@ -86,8 +91,7 @@ def menu_credito():
             1: CDT 
             2: Credito libre inversion
             3: Credito de vivienda
-            4: Credito para comprar automovil
-            5: Historial de productos''')
+            4: Credito para comprar automovil''')
     print('--------------------------------------')
 
 
@@ -104,40 +108,48 @@ def portafolio():
         credit_vivienda()
     elif optionPortafolio == 4:
         credit_automovil()
-    elif optionPortafolio == 5:
-        historial_productos()
         
         
 def saldo_cdt():
     try:
         cedula = int(input('Ingrese la cédula del usuario al que se le abrirá el CDT: '))
-        # Recorremos el diccionario principal
+        
         for llave, item in base_de_datos.items():
-
-            # Guardamos la clave principal, es decir el nombre
             nombre_usuario = list(item.keys())[0]
-            # Guardamos los valores de la clave principal
             datos_usuario = item[nombre_usuario]
             
-            # Para saber si la cedula que nosotros buscamos coincide con los valores guardados en datos_usuario...
             if datos_usuario['cedula'] == cedula:
                 print(f'Usuario encontrado: {nombre_usuario}')
                 print(f'Saldo actual: {datos_usuario["saldo"]}')
 
                 monto = int(input('Ingrese el monto que desea invertir en el CDT: '))
-                if monto > datos_usuario['saldo'] or datos_usuario['saldo'] < 0:
+                
+                if monto > datos_usuario['saldo'] or datos_usuario['saldo'] <= 0:
                     print('Fondos insuficientes para abrir el CDT.')
                     return
-                else:
-                    datos_usuario['saldo'] -= monto
-                    datos_usuario['productos']['CDT'] += monto
-                    print(f'CDT creado exitosamente por ${monto}')
-                    print(f'Nuevo saldo: {datos_usuario["saldo"]}')
-                    print(f'CDT actual: {datos_usuario["productos"]["CDT"]}')
-                    return
+                
+                # Buscar el producto "CDT" por su ID
+                for id_prod, prod_info in datos_usuario['productos'].items():
+                    if "CDT" in prod_info:
+                        prod_info["CDT"] += monto
+                        break
+
+                datos_usuario['saldo'] -= monto
+
+                print(f'CDT creado exitosamente por ${monto}')
+                print(f'Nuevo saldo: {datos_usuario["saldo"]}')
+                # Mostrar CDT actualizado
+                for id_prod, prod_info in datos_usuario['productos'].items():
+                    if "CDT" in prod_info:
+                        print(f'CDT actual: {prod_info["CDT"]}')
+                        break
+                return
+
         print('Usuario no encontrado con esa cédula.')
+        
     except ValueError:
         print('Error: debe ingresar un número de cédula y un monto válidos.')
+
 
 
 def credit_libre_inversion():
@@ -154,12 +166,20 @@ def credit_libre_inversion():
 
                 # Verificamos si tiene deuda activa
                 if datos_usuario['deuda'] > 0:
-                    print(f'No puedes abrir otro crédito sr/sra {nombre_usuario} . Tienes deuda activa.')
+                    print(f'No puedes abrir otro crédito sr/sra {nombre_usuario}. Tienes deuda activa.')
                     return
+
                 montoAprestar = int(input('Ingresa el monto que vas a solicitar: '))
-                datos_usuario['productos']['credito libre inversion'] += montoAprestar
+
+                # Buscar el producto "credito libre inversion" por su ID
+                for id_prod, prod_info in datos_usuario['productos'].items():
+                    if "credito libre inversion" in prod_info:
+                        prod_info["credito libre inversion"] += montoAprestar
+                        break
+
                 datos_usuario['saldo'] += montoAprestar
                 datos_usuario['deuda'] += montoAprestar
+
                 print(f'Su crédito fue aprobado por ${montoAprestar}')
                 print(f'Nuevo saldo: {datos_usuario["saldo"]}')
                 print(f'Deuda actual: {datos_usuario["deuda"]}')
@@ -169,6 +189,7 @@ def credit_libre_inversion():
 
     except ValueError:
         print('Error: debe ingresar números válidos para cédula y monto.')
+
 
 
 def credit_vivienda():
@@ -188,9 +209,16 @@ def credit_vivienda():
                     return
 
                 montoAprestar = int(input('Ingresa el monto que vas a solicitar: '))
-                datos_usuario['productos']['credito vivienda'] += montoAprestar
+
+                # Buscar el producto "credito vivienda" por su ID
+                for id_prod, prod_info in datos_usuario['productos'].items():
+                    if "credito vivienda" in prod_info:
+                        prod_info["credito vivienda"] += montoAprestar
+                        break
+
                 datos_usuario['saldo'] += montoAprestar
                 datos_usuario['deuda'] += montoAprestar
+
                 print(f'Su crédito de vivienda fue aprobado por ${montoAprestar}')
                 print(f'Nuevo saldo: {datos_usuario["saldo"]}')
                 print(f'Deuda actual: {datos_usuario["deuda"]}')
@@ -203,7 +231,7 @@ def credit_vivienda():
 
 def credit_automovil():
     try:
-        cedula = int(input('Ingrese la cédula del usuario al que se le abrirá crédito de automovil: '))
+        cedula = int(input('Ingrese la cédula del usuario al que se le abrirá crédito de automóvil: '))
 
         for llave, item in base_de_datos.items():
             nombre_usuario = list(item.keys())[0]
@@ -218,10 +246,17 @@ def credit_automovil():
                     return
 
                 montoAprestar = int(input('Ingresa el monto que vas a solicitar: '))
-                datos_usuario['productos']['credito automovil'] += montoAprestar
+
+                # Buscar el producto "credito automovil" por su ID
+                for id_prod, prod_info in datos_usuario['productos'].items():
+                    if "credito automovil" in prod_info:
+                        prod_info["credito automovil"] += montoAprestar
+                        break
+
                 datos_usuario['saldo'] += montoAprestar
                 datos_usuario['deuda'] += montoAprestar
-                print(f'Su crédito de automovil fue aprobado por ${montoAprestar}')
+
+                print(f'Su crédito de automóvil fue aprobado por ${montoAprestar}')
                 print(f'Nuevo saldo: {datos_usuario["saldo"]}')
                 print(f'Deuda actual: {datos_usuario["deuda"]}')
                 return
@@ -230,6 +265,7 @@ def credit_automovil():
 
     except ValueError:
         print('Error: debe ingresar números válidos para cédula y monto.')
+
 
 
 def retirar_saldo():
@@ -252,6 +288,7 @@ def retirar_saldo():
                 
                 if saldo_actual >= monto_a_retirar:
                     datos_usuario["saldo"] -= monto_a_retirar
+                    registrar_movimiento(datos_usuario, "Retiro", -monto_a_retirar)
                     print(f'Retiro exitoso. Nuevo saldo para {user}: {datos_usuario["saldo"]}')
                 else:
                     print('Lo sentimos, no tienes suficiente saldo para poder retirar ese valor.')
@@ -297,6 +334,7 @@ def pagar_deuda():
                 # Restar al saldo y a la deuda
                 datos_usuario["saldo"] -= pago_real
                 datos_usuario["deuda"] -= pago_real
+                registrar_movimiento(datos_usuario, "pago deuda", pago_real)
 
                 print(f'Pago exitoso. Nuevo saldo: {datos_usuario["saldo"]}, Nueva deuda: {datos_usuario["deuda"]}')
                 
@@ -363,6 +401,50 @@ def historial_productos():
         print("❌ Error: La cédula debe ser un número.")
 
 
+def registrar_movimiento(datos_usuario, tipo, valor):
+    id_mov = generar_id()
+    datos_usuario["movimientos"][id_mov] = {
+        "fecha": datetime.now().strftime("%Y-%m-%d"),
+        "hora": datetime.now().strftime("%H:%M:%S"),
+        "tipo": tipo,
+        "valor": valor,
+        "saldo_resultante": datos_usuario["saldo"]
+    }
+
+
+def historial_movimientos():
+    try:
+        cedula_buscar = int(input("Ingrese la cédula del usuario para ver el historial de movimientos: "))
+        
+        for llave, item in base_de_datos.items():
+            nombre_usuario = list(item.keys())[0]
+            datos_usuario = item[nombre_usuario]
+            
+            if datos_usuario['cedula'] == cedula_buscar:
+                print(f"\n📜 Historial de movimientos de {nombre_usuario}")
+                print("-" * 60)
+                
+                if not datos_usuario["movimientos"]:
+                    print("📌 No hay movimientos registrados.")
+                    return
+                
+                for id_mov, info in datos_usuario["movimientos"].items():
+                    print(f"🆔 ID: {id_mov}")
+                    print(f"📅 Fecha: {info['fecha']} ⏰ Hora: {info['hora']}")
+                    print(f"📌 Tipo: {info['tipo']}")
+                    print(f"💰 Valor: {info['valor']}")
+                    print(f"💳 Saldo después: {info['saldo_resultante']}")
+                    print("-" * 60)
+                return
+        
+        print("❌ No se encontró un usuario con esa cédula.")
+    except ValueError:
+        print("❌ Error: La cédula debe ser un número.")
+
+
+    
+
+
 
 while True:
     menu_principal()
@@ -382,5 +464,9 @@ while True:
         case 6:
             cancelar_cuenta()
         case 7:
+            historial_productos()
+        case 8:
+            historial_movimientos()
+        case 9:
             print('🚪 Has salido del sistema. Hasta la proxima 👋🏻')
             break
