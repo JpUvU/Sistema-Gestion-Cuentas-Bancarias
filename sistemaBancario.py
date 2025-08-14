@@ -336,7 +336,7 @@ def cancelar_cuenta():
 
 def historial_productos():
     try:
-        cedula_buscar = int(input("Ingrese la cédula del usuario: "))
+        cedula_buscar = int(input("Ingrese la cédula del usuario para consultar: "))
         
         for llave, item in base_de_datos.items():
             nombre_usuario = list(item.keys())[0]
