@@ -1,0 +1,30 @@
+{
+    "1": {
+        "Juan Pablo ": {
+            "cedula": 1096065226,
+            "email": "juanpa@gmail.com",
+            "contacto": 3115500924,
+            "ciudad": "Bucaramanga",
+            "saldo": 0,
+            "deuda": 0,
+            "productos": {
+                "63674354": {
+                    "Tipo": "ahorros"
+                },
+                "d03bf547": {
+                    "CDT": 0
+                },
+                "df55a0b7": {
+                    "credito libre inversion": 0
+                },
+                "27fe7fa1": {
+                    "credito vivienda: ": 0
+                },
+                "477e5cb9": {
+                    "credito automovil": 0
+                },
+                "movimientos": {}
+            }
+        }
+    }
+}

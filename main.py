@@ -1,7 +1,10 @@
 from datetime import datetime
 import os
 import uuid 
-base_de_datos = {}
+from database import guardar_datos, cargar_datos
+
+ARCHIVO_DATOS = "base_de_datos.json"
+base_de_datos = cargar_datos()
 
 def menu_principal():
     print('--------------------------------------')
@@ -17,45 +20,78 @@ def menu_principal():
             9: Salir del sistema''')
     print('--------------------------------------')
 
-
 def generar_id():
     return str(uuid.uuid4())[:8]  # ID único corto
     
 def crear_cuenta():
-
     crear_cuenta = input('Si desea crear la cuenta ingrese "S" para si o "N" para no: ').strip().upper()
 
     if crear_cuenta == 'S':
         print('Creando la cuenta')
         try:
-            nombre = input('Ingrese el nombre: ')
-            cc = int(input('Digite la cedula sin puntos y sin espacios...ejm: 1097066225: '))
-            email = input('Ingrese el email: ')
-            contacto = int(input('Ingrese su numero telefonico: '))
+            nombre = input('Ingrese el nombre: ').strip()
+            cc = int(input('Digite la cédula sin puntos y sin espacios... ejm: 1097066225: '))
+            email = input('Ingrese el email: ').strip()
+            contacto = int(input('Ingrese su número telefónico: '))
             ubicacion = input('Ingrese la ciudad de residencia: ').strip()
             saldo = int(input('Ingrese el saldo inicial: '))
-            tipoCuenta = input('Ingrese si la cuenta sera ahorros o corriente: ').strip()
+            tipoCuenta = input('Ingrese si la cuenta será ahorros o corriente: ').strip().lower()
             saldo_cdt = 0
             SaldoCreditoLibreInv = 0
             SaldoCreditoVivienda = 0
             saldoCreditoAutomovil = 0
             deudaCredito = 0
 
-            if tipoCuenta == 'ahorros' or tipoCuenta ==  'corriente':
-                datos_usuario = {nombre: {'cedula': cc, 'email': email, 'contacto': contacto, 'ciudad': ubicacion, 'saldo': saldo,'deuda': deudaCredito, 'movimientos': {}, 
-                                          'productos':{ generar_id():{'Tipo': tipoCuenta}, generar_id():{'CDT': saldo_cdt} , generar_id():{'credito libre inversion': SaldoCreditoLibreInv},
-                                            generar_id():{'credito vivienda: ': SaldoCreditoVivienda}, generar_id():{'credito automovil': saldoCreditoAutomovil}}}}
+            # 🔎 Validaciones de unicidad
+            for _, item in base_de_datos.items():
+                nombre_existente = list(item.keys())[0]
+                datos_existentes = item[nombre_existente]
+
+                if datos_existentes['cedula'] == cc:
+                    print("❌ Error: Ya existe un usuario con esa cédula.")
+                    return
+                if nombre_existente.lower() == nombre.lower():
+                    print("❌ Error: El nombre de usuario ya está registrado.")
+                    return
+                if datos_existentes['contacto'] == contacto:
+                    print("❌ Error: El número de teléfono ya está registrado.")
+                    return
+                if datos_existentes['email'].lower() == email.lower():
+                    print("❌ Error: El correo electrónico ya está registrado.")
+                    return
+
+            # ✅ Si pasa las validaciones, se crea la cuenta
+            if tipoCuenta in ('ahorros', 'corriente'):
+                datos_usuario = {
+                    nombre: {
+                        'cedula': cc,
+                        'email': email,
+                        'contacto': contacto,
+                        'ciudad': ubicacion,
+                        'saldo': saldo,
+                        'deuda': deudaCredito,
+                        'productos': {
+                            generar_id(): {'Tipo': tipoCuenta},
+                            generar_id(): {'CDT': saldo_cdt},
+                            generar_id(): {'credito libre inversion': SaldoCreditoLibreInv},
+                            generar_id(): {'credito vivienda': SaldoCreditoVivienda},
+                            generar_id(): {'credito automovil': saldoCreditoAutomovil}
+                        },
+                        'movimientos': {}
+                    }
+                }
 
                 llave = len(base_de_datos) + 1
                 base_de_datos.update({llave: datos_usuario})
+                print(f"✅ Cuenta creada exitosamente para {nombre}")
             else:
-                print('error')
-        except ValueError:
-            print('Error inesperado, ingresa los datos correctamente...')
+                print('❌ Error: Tipo de cuenta inválido. Debe ser "ahorros" o "corriente".')
 
-        print(base_de_datos)
+        except ValueError:
+            print('❌ Error inesperado, ingresa los datos correctamente...')
+
     else:
-        print('saliendo...')
+        print('Saliendo...')
 
 
 def depositar_saldo():
@@ -83,8 +119,6 @@ def depositar_saldo():
     # Si el bucle termina sin encontrar el usuario
     print('No se ha encontrado el usuario.')
 
-
-
 def menu_credito():
     print('--------------------------------------')
     print('''      Consulta del portafolio       
@@ -93,8 +127,6 @@ def menu_credito():
             3: Credito de vivienda
             4: Credito para comprar automovil''')
     print('--------------------------------------')
-
-
 
 def portafolio():
     menu_credito()
@@ -108,7 +140,6 @@ def portafolio():
         credit_vivienda()
     elif optionPortafolio == 4:
         credit_automovil()
-        
         
 def saldo_cdt():
     try:
@@ -150,8 +181,6 @@ def saldo_cdt():
     except ValueError:
         print('Error: debe ingresar un número de cédula y un monto válidos.')
 
-
-
 def credit_libre_inversion():
     try:
         cedula = int(input('Ingrese la cédula del usuario al que se le abrirá crédito de libre inversión: '))
@@ -189,8 +218,6 @@ def credit_libre_inversion():
 
     except ValueError:
         print('Error: debe ingresar números válidos para cédula y monto.')
-
-
 
 def credit_vivienda():
     try:
@@ -266,8 +293,6 @@ def credit_automovil():
     except ValueError:
         print('Error: debe ingresar números válidos para cédula y monto.')
 
-
-
 def retirar_saldo():
     user = input('Ingrese nombre del usuario al cual le vas a retirar saldo: ')
     
@@ -297,7 +322,6 @@ def retirar_saldo():
             return
 
     print('No se ha encontrado el usuario.')
-
 
 def pagar_deuda():
     user = input('Ingrese nombre del usuario al cual le vas a pagar la deuda: ')
@@ -351,7 +375,6 @@ def pagar_deuda():
 
     print('No se ha encontrado el usuario.')
 
-
 def cancelar_cuenta():
     user = input('Ingrese nombre del usuario que quiere cancelar la cuenta: ')
     
@@ -400,7 +423,6 @@ def historial_productos():
     except ValueError:
         print("❌ Error: La cédula debe ser un número.")
 
-
 def registrar_movimiento(datos_usuario, tipo, valor):
     id_mov = generar_id()
     datos_usuario["movimientos"][id_mov] = {
@@ -410,7 +432,6 @@ def registrar_movimiento(datos_usuario, tipo, valor):
         "valor": valor,
         "saldo_resultante": datos_usuario["saldo"]
     }
-
 
 def historial_movimientos():
     try:
@@ -442,31 +463,41 @@ def historial_movimientos():
         print("❌ Error: La cédula debe ser un número.")
 
 
-    
 
+# --- Punto de entrada del programa ---
+if __name__ == "__main__":
+    while True:
+        menu_principal()
+        try:
+            opcion = int(input('Ingrese la opcion a ejecutar: '))
+        except ValueError:
+            print("❌ Opción inválida, ingrese un número.")
+            continue
 
-
-while True:
-    menu_principal()
-    opcion = int(input('Ingrese la opcion a ejecutar: '))
-    os.system('cls')
-    match opcion:
-        case 1:
-            crear_cuenta()
-        case 2:
-            depositar_saldo()
-        case 3:
-            portafolio()
-        case 4:
-            retirar_saldo()
-        case 5:
-            pagar_deuda()
-        case 6:
-            cancelar_cuenta()
-        case 7:
-            historial_productos()
-        case 8:
-            historial_movimientos()
-        case 9:
-            print('🚪 Has salido del sistema. Hasta la proxima 👋🏻')
-            break
+        os.system('cls')
+        match opcion:
+            case 1:
+                crear_cuenta()
+                guardar_datos(base_de_datos)
+            case 2:
+                depositar_saldo()
+                guardar_datos(base_de_datos)
+            case 3:
+                portafolio()
+                guardar_datos(base_de_datos)
+            case 4:
+                retirar_saldo()
+                guardar_datos(base_de_datos)
+            case 5:
+                pagar_deuda()
+                guardar_datos(base_de_datos)
+            case 6:
+                cancelar_cuenta()
+                guardar_datos(base_de_datos)
+            case 7:
+                historial_productos()
+            case 8:
+                historial_movimientos()
+            case 9:
+                print('🚪 Has salido del sistema. Hasta la próxima 👋🏻')
+                break
